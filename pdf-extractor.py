@@ -118,9 +118,10 @@ def main():
         # Prompt user to edit fields if necessary
         corrected_fields_data = prompt_user_to_edit_fields(fields_data)
 
-        # Save the corrected fields to a new CSV
+        # Save the corrected fields to a new CSV with only headers
         corrected_output_csv_path = os.path.join(output_dir, 'corrected_form_fields.csv')
-        pd.DataFrame([corrected_fields_data]).to_csv(corrected_output_csv_path, index=False)
+        corrected_df = pd.DataFrame(columns=corrected_fields_data.values())
+        corrected_df.to_csv(corrected_output_csv_path, index=False)
         print(f'Corrected form fields have been saved to {corrected_output_csv_path}')
 
         # Show diff between original and corrected CSV
