@@ -1,3 +1,5 @@
 pdfrw
 pandas
 tk
+reportlab
+pdfplumber
