@@ -48,6 +48,11 @@ def main():
         print("No form fields found in the PDF.")
         return
 
+    # Print form fields to console
+    print("Extracted form fields:")
+    for field in fields_data:
+        print(field['Field name'])
+
     # Save to CSV
     df = pd.DataFrame(fields_data)
     df.to_csv(output_csv_path, index=False)
