@@ -14,14 +14,14 @@ def get_file_path():
         return file_path
 
 def get_form_fields(pdf):
-    fields_data = []
+    fields_data = {}
     if '/AcroForm' in pdf.Root:
         form = pdf.Root.AcroForm
         if '/Fields' in form:
             fields = form.Fields
             for field in fields:
                 field_name = field.T[1:-1]  # Remove the parentheses around the field name
-                fields_data.append({'Field name': field_name})
+                fields_data[field_name] = ''
     return fields_data
 
 def main():
@@ -50,11 +50,11 @@ def main():
 
     # Print form fields to console
     print("Extracted form fields:")
-    for field in fields_data:
-        print(field['Field name'])
+    for field in fields_data.keys():
+        print(field)
 
     # Save to CSV
-    df = pd.DataFrame(fields_data)
+    df = pd.DataFrame([fields_data])
     df.to_csv(output_csv_path, index=False)
 
     print(f'Form fields have been saved to {output_csv_path}')
