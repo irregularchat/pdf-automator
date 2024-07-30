@@ -3,7 +3,6 @@ import sys
 import pandas as pd
 import argparse
 from pdfrw import PdfReader, PdfWriter, PdfDict, PdfString, PdfObject
-from tkinter import Tk, filedialog
 
 def fill_pdf(template_path, data, output_path):
     print(f"Filling PDF with data: {data.to_dict()}")
