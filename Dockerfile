@@ -1,26 +1,14 @@
-version: '3'
-services:
-  pdf-extractor:
-    build: .
-    volumes:
-      - .:/app
-    environment:
-      - FILE_PATH=
-    entrypoint: ["python", "pdf-extractor.py", "$FILE_PATH"]
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
 
-  pdf-splitter:
-    build: .
-    volumes:
-      - .:/app
-    environment:
-      - FILE_PATH=
-    entrypoint: ["python", "pdf-splitter.py", "$FILE_PATH"]
+# Set the working directory in the container
+WORKDIR /app
 
-  pdf-filler:
-    build: .
-    volumes:
-      - .:/app
-    environment:
-      - PDF_PATH=
-      - CSV_PATHS=
-    entrypoint: ["python", "pdf-filler.py", "--pdf", "$PDF_PATH", "--csv", "$CSV_PATHS"]
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Default command to keep the container running
+CMD ["tail", "-f", "/dev/null"]
