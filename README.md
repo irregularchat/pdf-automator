@@ -1,3 +1,6 @@
+# PDF Automator
+
+This project provides a set of tools for extracting, filling, and splitting PDF forms using Python. The tools allow you to work with PDF forms and CSV data to automate PDF form handling.
 ## Roadmap
 - [x] Extract form fields from a PDF file
 - [x] Split a CSV file into multiple CSV files based on selected columns
@@ -8,6 +11,7 @@
 - [ ] Create MEMO from scratch using DA Pubs template and 25-50 
 - [ ] Create Word Mail Merge from PDF 
 - [ ] Create PDF from Word Mail Merge
+
 ### Prerequisites
 
 - Python 3.7 or higher
@@ -47,4 +51,62 @@ venv\Scripts\activate
 ```bash
 pip install -r requirements.txt
 ```
+
+## Scripts and Usage
+
+### 1. PDF Extractor
+
+Extract form fields from a PDF file.
+
+```bash
+python3 pdf-extractor.py /path/to/your/pdf_file.pdf
+```
+
+### 2. PDF Filler
+
+Fill a PDF form with data from one or more CSV files.
+
+```bash
+python3 pdf-filler.py --pdf /path/to/your/pdf_file.pdf --csv /path/to/your/csv_file1.csv /path/to/your/csv_file2.csv
+```
+
+### 3. PDF Splitter
+
+Split a CSV file into multiple CSV files based on selected columns.
+
+```bash
+python3 pdf-splitter.py /path/to/your/csv_file.csv
+```
+
+## Examples
+
+### Extracting Form Fields
+
+To extract form fields from a PDF:
+
+```bash
+python3 pdf-extractor.py /path/to/your/pdf_file.pdf
+```
+
+This will create a CSV file named `form_fields.csv` in the `output_files` directory.
+
+### Filling a PDF Form
+
+To fill a PDF form with data from multiple CSV files:
+
+```bash
+python3 pdf-filler.py --pdf output_files/corrected_form.pdf --csv split_csv_files/People.csv split_csv_files/School.csv split_csv_files/Unit.csv
+```
+
+You will be prompted to select rows from each CSV file and the columns to include in the file name.
+
+### Splitting a CSV File
+
+To split a CSV file into multiple CSV files:
+
+```bash
+python3 pdf-splitter.py /path/to/your/csv_file.csv
+```
+
+You will be prompted to select columns to include in each split CSV file and to name each split CSV file.
 
