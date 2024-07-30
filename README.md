@@ -110,3 +110,16 @@ python3 pdf-splitter.py /path/to/your/csv_file.csv
 
 You will be prompted to select columns to include in each split CSV file and to name each split CSV file.
 
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request on GitHub.
+
+### Pull Request Process
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature` OR graphically in your git client)
+3. Make changes
+4. Commit your changes (`git commit -am 'Add/FIXED new feature'` OR graphically in your git client)
+5. Push to the branch (`git push origin feature`)
+6. Create a new Pull Request
+
+
