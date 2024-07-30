@@ -3,14 +3,7 @@ import sys
 import pandas as pd
 import argparse
 from pdfrw import PdfReader, PdfWriter, PdfDict, PdfString, PdfObject
-from tkinter import Tk, filedialog
 import pdfplumber
-
-def get_file_path(prompt):
-    root = Tk()
-    root.withdraw()
-    file_path = filedialog.askopenfilename(title=prompt, filetypes=[("PDF files", "*.pdf"), ("CSV files", "*.csv")])
-    return file_path
 
 def get_font_properties(template_path):
     font_properties = {}
@@ -24,65 +17,106 @@ def get_font_properties(template_path):
     return font_properties
 
 def fill_pdf(template_path, data, output_path, font_properties):
-    # Read the template PDF
+    print(f"Filling PDF with data: {data.to_dict()}")
     template_pdf = PdfReader(template_path)
     template_pdf.Root.AcroForm.update(PdfDict(NeedAppearances=PdfObject('true')))
 
-    # Fill the form
     for page in template_pdf.pages:
         annotations = page['/Annots']
         if annotations:
             for annotation in annotations:
-                field_name = annotation['/T'][1:-1]  # Remove the parentheses around the field name
+                field_name = annotation['/T'][1:-1]
                 if field_name in data.index:
                     value = str(data[field_name])
                     if value and value.lower() != 'nan':
                         annotation.update(
                             PdfDict(V=PdfString.encode(value))
                         )
-                        # Apply the same font properties if available
                         if field_name in font_properties:
                             annotation.update(
                                 PdfDict(
                                     DA=PdfString.encode(font_properties[field_name])
                                 )
                             )
+                    else:
+                        annotation.update(
+                            PdfDict(V=PdfString.encode(''))
+                        )
 
-    # Write the filled PDF to a file
     PdfWriter().write(output_path, template_pdf)
     print(f'Filled PDF has been saved to {output_path}')
 
 def get_output_filename(row, columns):
-    parts = [str(row[col]).replace('/', '-').replace(' ', '_') for col in columns]
+    parts = [str(row[col]).replace('/', '-').replace(' ', '_') for col in columns if pd.notna(row[col])]
     filename = "-".join(parts) + ".pdf"
     return filename
 
+def combine_rows(selected_data):
+    combined_data = pd.DataFrame()
+    for df in selected_data:
+        if combined_data.empty:
+            combined_data = df.copy()
+        else:
+            combined_data = combined_data.join(df, how='outer')
+    return combined_data
+
 def main():
-    parser = argparse.ArgumentParser(description='Fill a PDF form with data from a CSV file.')
+    parser = argparse.ArgumentParser(description='Fill a PDF form with data from one or multiple CSV files.')
     parser.add_argument('--pdf', type=str, help='Path to the PDF form')
-    parser.add_argument('--csv', type=str, help='Path to the CSV file with data')
+    parser.add_argument('--csv', type=str, nargs='*', help='Paths to the CSV files')
     args = parser.parse_args()
 
-    if args.pdf and args.csv:
+    if args.pdf:
         template_path = args.pdf
-        data_path = args.csv
     else:
-        template_path = get_file_path("Select the PDF form")
-        data_path = get_file_path("Select the CSV file with data")
+        print("No PDF file specified. Exiting...")
+        return
 
-    if not template_path or not data_path:
-        print("File selection cancelled. Exiting...")
+    if args.csv:
+        data_paths = args.csv
+    else:
+        print("No CSV files specified. Exiting...")
         return
 
     output_dir = 'output_files'
     os.makedirs(output_dir, exist_ok=True)
 
-    data = pd.read_csv(data_path)
-    if data.empty:
-        print("No data found in CSV.")
+    data_frames = []
+    for data_path in data_paths:
+        data = pd.read_csv(data_path)
+        if data.empty:
+            print(f"No data found in CSV: {data_path}")
+            continue
+
+        print(f"\nAvailable rows in {data_path}:")
+        print(data)
+        selected_rows = input(f"Enter the row indices to use from {data_path} (comma or space-separated, or 'all' for all rows): ").strip()
+        if selected_rows.lower() == 'all' or selected_rows == '':
+            data_frames.append(data)
+            print(f"Added all rows from {data_path}")
+        else:
+            try:
+                selected_indices = [int(s.strip()) for s in selected_rows.replace(',', ' ').split()]
+                selected_data = data.iloc[selected_indices]
+                data_frames.append(selected_data)
+                print(f"Added selected rows {selected_indices} from {data_path}")
+            except ValueError:
+                print(f"Invalid input for rows in {data_path}. Using all rows.")
+                data_frames.append(data)
+
+    if not data_frames:
+        print("No valid data found in any CSV file. Exiting...")
         return
 
-    columns = list(data.columns)
+    combined_data = pd.concat(data_frames, axis=1)
+    print(f"Combined data:\n{combined_data}")
+    if combined_data.empty:
+        print("Combined data is empty. Exiting...")
+        return
+
+    font_properties = get_font_properties(template_path)
+
+    columns = list(combined_data.columns)
     selected_columns = []
 
     print("Available columns for file naming:")
@@ -90,9 +124,12 @@ def main():
         print(f"{idx}. {column}")
 
     while True:
-        selected = input("Enter the numbers of the columns to include in the file name (comma or space-separated, or 'done' to finish): ")
+        selected = input("Enter the numbers of the columns to include in the file name (comma or space-separated, or 'done' to finish): ").strip()
         if selected.lower() == 'done':
             break
+        if selected == '':
+            print("No columns selected for file naming. Exiting...")
+            return
         try:
             selected_indices = [int(s.strip()) - 1 for s in selected.replace(',', ' ').split()]
             for idx in selected_indices:
@@ -104,13 +141,7 @@ def main():
         except ValueError:
             print("Invalid input. Enter numbers separated by commas or spaces, or 'done'.")
 
-    if not selected_columns:
-        print("No columns selected for file naming. Exiting...")
-        return
-
-    font_properties = get_font_properties(template_path)
-
-    for index, row in data.iterrows():
+    for index, row in combined_data.iterrows():
         filename = get_output_filename(row, selected_columns)
         output_pdf_path = os.path.join(output_dir, filename)
         fill_pdf(template_path, row, output_pdf_path, font_properties)
