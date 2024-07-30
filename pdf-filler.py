@@ -51,15 +51,6 @@ def get_output_filename(row, columns):
     filename = "-".join(parts) + ".pdf"
     return filename
 
-def combine_rows(selected_data):
-    combined_data = pd.DataFrame()
-    for df in selected_data:
-        if combined_data.empty:
-            combined_data = df.copy()
-        else:
-            combined_data = combined_data.join(df, how='outer')
-    return combined_data
-
 def main():
     parser = argparse.ArgumentParser(description='Fill a PDF form with data from one or multiple CSV files.')
     parser.add_argument('--pdf', type=str, help='Path to the PDF form')
@@ -104,11 +95,14 @@ def main():
                 print(f"Invalid input for rows in {data_path}. Using all rows.")
                 data_frames.append(data)
 
-    if not data_frames:
-        print("No valid data found in any CSV file. Exiting...")
+    if len(data_frames) < 2:
+        print("At least two CSV files are required. Exiting...")
         return
 
-    combined_data = pd.concat(data_frames, axis=1)
+    people_data = data_frames[0]
+    school_data = data_frames[1]
+
+    combined_data = people_data.merge(school_data, how='cross')
     print(f"Combined data:\n{combined_data}")
     if combined_data.empty:
         print("Combined data is empty. Exiting...")
