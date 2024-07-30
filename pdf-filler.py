@@ -53,8 +53,8 @@ def fill_pdf(template_path, data, output_path, font_properties):
     print(f'Filled PDF has been saved to {output_path}')
 
 def get_output_filename(row, columns):
-    parts = [str(row[col]).replace('/', '-') for col in columns]
-    filename = "_".join(parts) + ".pdf"
+    parts = [str(row[col]).replace('/', '-').replace(' ', '_') for col in columns]
+    filename = "-".join(parts) + ".pdf"
     return filename
 
 def main():
