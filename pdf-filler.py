@@ -23,16 +23,10 @@ def get_font_properties(template_path):
                         font_properties[field_name] = field['DA']
     return font_properties
 
-def fill_pdf(template_path, data_path, output_path, font_properties):
+def fill_pdf(template_path, data, output_path, font_properties):
     # Read the template PDF
     template_pdf = PdfReader(template_path)
     template_pdf.Root.AcroForm.update(PdfDict(NeedAppearances=PdfObject('true')))
-
-    # Read the data from CSV
-    data = pd.read_csv(data_path)
-    if data.empty:
-        print("No data found in CSV.")
-        return
 
     # Fill the form
     for page in template_pdf.pages:
@@ -40,8 +34,8 @@ def fill_pdf(template_path, data_path, output_path, font_properties):
         if annotations:
             for annotation in annotations:
                 field_name = annotation['/T'][1:-1]  # Remove the parentheses around the field name
-                if field_name in data.columns:
-                    value = str(data[field_name].values[0])
+                if field_name in data.index:
+                    value = str(data[field_name])
                     if value and value.lower() != 'nan':
                         annotation.update(
                             PdfDict(V=PdfString.encode(value))
@@ -57,6 +51,11 @@ def fill_pdf(template_path, data_path, output_path, font_properties):
     # Write the filled PDF to a file
     PdfWriter().write(output_path, template_pdf)
     print(f'Filled PDF has been saved to {output_path}')
+
+def get_output_filename(row, columns):
+    parts = [str(row[col]).replace('/', '-') for col in columns]
+    filename = "_".join(parts) + ".pdf"
+    return filename
 
 def main():
     parser = argparse.ArgumentParser(description='Fill a PDF form with data from a CSV file.')
@@ -77,10 +76,44 @@ def main():
 
     output_dir = 'output_files'
     os.makedirs(output_dir, exist_ok=True)
-    output_pdf_path = os.path.join(output_dir, 'filled_form.pdf')
+
+    data = pd.read_csv(data_path)
+    if data.empty:
+        print("No data found in CSV.")
+        return
+
+    columns = list(data.columns)
+    selected_columns = []
+
+    print("Available columns for file naming:")
+    for idx, column in enumerate(columns, start=1):
+        print(f"{idx}. {column}")
+
+    while True:
+        selected = input("Enter the numbers of the columns to include in the file name (comma or space-separated, or 'done' to finish): ")
+        if selected.lower() == 'done':
+            break
+        try:
+            selected_indices = [int(s.strip()) - 1 for s in selected.replace(',', ' ').split()]
+            for idx in selected_indices:
+                if 0 <= idx < len(columns):
+                    selected_columns.append(columns[idx])
+                else:
+                    print(f"Invalid number: {idx + 1}. Try again.")
+            break
+        except ValueError:
+            print("Invalid input. Enter numbers separated by commas or spaces, or 'done'.")
+
+    if not selected_columns:
+        print("No columns selected for file naming. Exiting...")
+        return
 
     font_properties = get_font_properties(template_path)
-    fill_pdf(template_path, data_path, output_pdf_path, font_properties)
+
+    for index, row in data.iterrows():
+        filename = get_output_filename(row, selected_columns)
+        output_pdf_path = os.path.join(output_dir, filename)
+        fill_pdf(template_path, row, output_pdf_path, font_properties)
 
 if __name__ == "__main__":
     main()
