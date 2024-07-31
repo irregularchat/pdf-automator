@@ -35,7 +35,7 @@ def get_data_from_csv(file_path):
         print(f"No data found in CSV: {file_path}")
         return pd.DataFrame()
 
-    print(f"\nAvailable rows in {file_path}:")
+    print(f"\nAvailable rows in {file_path}:\n")
     print(data)
     while True:
         selected_indices = input(f"Enter the row indices to use from {file_path} (comma or space-separated, or 'all' for all rows): ").strip()
@@ -52,12 +52,12 @@ def get_data_from_csv(file_path):
 
 def get_selected_columns(columns):
     selected_columns = []
-    print("Available columns for file naming:")
+    print("\nAvailable columns for file naming:\n")
     for idx, column in enumerate(columns, start=1):
         print(f"{idx}. {column}")
 
     while True:
-        selected = input("Enter the numbers of the columns to include in the file name (comma or space-separated, or 'done' to finish): ").strip()
+        selected = input("\nEnter the numbers of the columns to include in the file name (comma or space-separated, or 'done' to finish): ").strip()
         if selected.lower() == 'done':
             break
         if selected == '':
@@ -75,34 +75,6 @@ def get_selected_columns(columns):
             print("Invalid input. Enter numbers separated by commas or spaces, or 'done'.")
 
     return selected_columns
-
-def check_missing_fields(template_path, combined_data):
-    template_pdf = PdfReader(template_path)
-    pdf_fields = set()
-
-    for page in template_pdf.pages:
-        annotations = page['/Annots']
-        if annotations:
-            for annotation in annotations:
-                field_name = annotation['/T'][1:-1]
-                pdf_fields.add(field_name)
-
-    missing_fields = pdf_fields - set(combined_data.columns)
-    return missing_fields
-
-def add_missing_columns(missing_fields, data_frames):
-    print(f"Missing fields: {missing_fields}")
-    for field in missing_fields:
-        print(f"\nSelect CSV to add the missing field '{field}'")
-        for idx, df in enumerate(data_frames):
-            print(f"{idx + 1}. {df}")
-        
-        selected_csv = int(input("Enter the number of the CSV file: ").strip()) - 1
-        if 0 <= selected_csv < len(data_frames):
-            default_value = input(f"Enter the default value for the new column '{field}': ").strip()
-            data_frames[selected_csv][field] = default_value
-        else:
-            print("Invalid selection. Try again.")
 
 def main():
     parser = argparse.ArgumentParser(description='Fill a PDF form with data from one or multiple CSV files.')
@@ -143,18 +115,10 @@ def main():
         for df in data_frames[1:]:
             combined_data = combined_data.merge(df.assign(key=1), how='cross').drop('key', axis=1)
 
-    print(f"Combined data:\n{combined_data}")
+    print(f"\nCombined data:\n{combined_data}")
     if combined_data.empty:
         print("Combined data is empty. Exiting...")
         return
-
-    missing_fields = check_missing_fields(args.pdf, combined_data)
-    if missing_fields:
-        add_missing_columns(missing_fields, data_frames)
-        combined_data = data_frames[0]
-        if len(data_frames) > 1:
-            for df in data_frames[1:]:
-                combined_data = combined_data.merge(df.assign(key=1), how='cross').drop('key', axis=1)
 
     columns = list(combined_data.columns)
     selected_columns = get_selected_columns(columns)
